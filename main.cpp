@@ -55,7 +55,6 @@ private:
         update_height(new_root);
 
         return new_root;
-
     }
 
     static Node* balance(Node *n) {
@@ -94,8 +93,13 @@ private:
         delete n;
     }
 
-    static key_t find_max(Node *n) {
-        if (n->right == nullptr) return n->key;
+    static Node* find_min(Node *n) {
+        if (n->left == nullptr) return n;
+        return find_min(n->left);
+    }
+
+    static Node* find_max(Node *n) {
+        if (n->right == nullptr) return n;
         return find_max(n->right);
     }
 
@@ -114,8 +118,12 @@ public:
         root = insert(root, k);
     }
 
+    key_t find_min() const {
+        return !empty() ? find_min(root)->key : KEY_POSITIVE_INF;
+    }
+
     key_t find_max() const {
-        return !empty() ? find_max(root) : KEY_NEGATIVE_INF;
+        return !empty() ? find_max(root)->key : KEY_NEGATIVE_INF;
     }
 
     friend ostream& operator<<(ostream &os, const AVLTree &avl) {
@@ -139,6 +147,7 @@ public:
         queue<Node*> q, next_q;
         if (avl.root != nullptr) q.push(avl.root);
         n_keys_t x_curr = 0;
+        // max key width
         int setw_val = int(to_string(avl.find_max()).length());
 
         while (!q.empty()) {
