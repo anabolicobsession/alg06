@@ -86,6 +86,37 @@ private:
         return balance(n);
     }
 
+    static Node* remove(Node *n, key_t k) {
+        if (n != nullptr) {
+            if (k < n->key) {
+                n->left = remove(n->left, k);
+            } else if (k > n->key) {
+                n->right = remove(n->right, k);
+            // case with two children
+            } else if (n->left != nullptr && n->right != nullptr) {
+                if (n->left->height > n->right->height) {
+                    Node *mx = find_max(n->left);
+                    n->key = mx->key;
+                    n->left = remove(n->left, mx->key);
+                } else {
+                    Node *mn = find_min(n->right);
+                    n->key = mn->key;
+                    n->right = remove(n->right, mn->key);
+                }
+            // one or zero children
+            } else {
+                Node *child = n->left != nullptr ? n->left : (n->right != nullptr ? n->right : nullptr);
+                delete n;
+                n = child;
+            }
+        }
+
+        if (n == nullptr) return n;
+        update_height(n);
+
+        return balance(n);
+    }
+
     static void clear(Node *n) {
         if (n == nullptr) return;
         clear(n->left);
@@ -116,6 +147,10 @@ public:
 
     void insert(key_t k) {
         root = insert(root, k);
+    }
+
+    void remove(key_t k) {
+        root = remove(root, k);
     }
 
     key_t find_min() const {
