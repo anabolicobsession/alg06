@@ -25,8 +25,8 @@ private:
 
     struct Node {
         vector<key_t> keys;
-        Node *left, *right;
         int height;
+        Node *left, *right;
 
         explicit Node(key_t k) : height(NODE_HEIGHT), left(nullptr), right(nullptr) {
             keys.push_back(k);
@@ -82,15 +82,15 @@ private:
 
     Node *root;
 
-    static int height(Node *n) {
+    int height(Node *n) {
         return n == nullptr ? EMPTY_NODE_HEIGHT : n->height;
     }
 
-    static void update_height(Node *n) {
+    void update_height(Node *n) {
         n->height = max(height(n->left), height(n->right)) + 1;
     };
 
-    static Node* left_node_rotate(Node *n) {
+    Node* left_node_rotate(Node *n) {
         Node *new_root = n->right;
         n->right = new_root->left;
         new_root->left = n;
@@ -101,7 +101,7 @@ private:
         return new_root;
     }
 
-    static Node* right_node_rotate(Node *n) {
+    Node* right_node_rotate(Node *n) {
         Node *new_root = n->left;
         n->left = new_root->right;
         new_root->right = n;
@@ -112,7 +112,7 @@ private:
         return new_root;
     }
 
-    static Node* left_key_rotate(Node *n) {
+    Node* left_key_rotate(Node *n) {
         // add the minimal key from the right subtree
         Node *r = find_min(n->right);
         n->push(r->min());
@@ -125,7 +125,7 @@ private:
         return n;
     }
 
-    static Node* right_key_rotate(Node *n) {
+    Node* right_key_rotate(Node *n) {
         Node *l = find_max(n->left);
         n->push(l->max());
         n->left = remove(l->max(), n->left);
@@ -136,7 +136,7 @@ private:
         return n;
     }
 
-    static Node* balance(Node *n) {
+    Node* balance(Node *n) {
         update_height(n);
 
         if (!n->is_leaf()) {
@@ -162,17 +162,17 @@ private:
         return n;
     }
 
-    static Node* find_min(Node *n) {
+    Node* find_min(Node *n) {
         if (n->left == nullptr) return n;
         return find_min(n->left);
     }
 
-    static Node* find_max(Node *n) {
+    Node* find_max(Node *n) {
         if (n->right == nullptr) return n;
         return find_max(n->right);
     }
 
-    static Node* insert(key_t k, Node *n) {
+    Node* insert(key_t k, Node *n) {
         if (n == nullptr) {
             return new Node(k);
         }
@@ -202,7 +202,7 @@ private:
         return balance(n);
     }
 
-    static Node* remove(key_t k, Node *n) {
+    Node* remove(key_t k, Node *n) {
         if (n == nullptr) {
             return n;
         }
@@ -245,7 +245,7 @@ private:
         get_statistics(stat, n->right);
     }
 
-    static void clear(Node *n) {
+    void clear(Node *n) {
         if (n == nullptr) return;
         clear(n->left);
         clear(n->right);
@@ -375,8 +375,8 @@ int main() {
     }
 
     auto stat = davl.get_statistics();
-        for (int i = 0; i < stat.size(); ++i) {
-        cout << stat[i] << (i < stat.size() - 1 ? " " : "\n");
+        for (int i = 0; i < int(stat.size()); ++i) {
+        cout << stat[i] << (i < int(stat.size()) - 1 ? " " : "\n");
     }
 
     return 0;
