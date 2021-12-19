@@ -10,10 +10,9 @@ using namespace std;
 const char CMD_INSERT = 'I';
 const char CMD_DELETE = 'D';
 
+template <typename key_t>
 class DualAVLTree {
 private:
-    typedef int key_t;
-
     static const key_t KEY_NEG_INF = numeric_limits<key_t>::min();
     static const key_t KEY_POS_INF = numeric_limits<key_t>::max();
 
@@ -51,9 +50,7 @@ private:
 
         bool push(key_t k) {
             for (const auto &key: keys) {
-                if (k == key) {
-                    return false;
-                }
+                if (k == key) return false;
             }
             keys.push_back(k);
             sort(keys.begin(), keys.end());
@@ -93,7 +90,7 @@ private:
         n->height = max(height(n->left), height(n->right)) + 1;
     };
 
-    static Node* left_rotate(Node *n) {
+    static Node* left_node_rotate(Node *n) {
         Node *new_root = n->right;
         n->right = new_root->left;
         new_root->left = n;
@@ -104,7 +101,7 @@ private:
         return new_root;
     }
 
-    static Node* right_rotate(Node *n) {
+    static Node* right_node_rotate(Node *n) {
         Node *new_root = n->left;
         n->left = new_root->right;
         new_root->right = n;
@@ -115,38 +112,51 @@ private:
         return new_root;
     }
 
-    static Node* balance_nodes(Node *n) {
-        update_height(n);
+    static Node* left_key_rotate(Node *n) {
+        // add the minimal key from the right subtree
+        Node *r = find_min(n->right);
+        n->push(r->min());
+        n->right = remove(r->min(), n->right);
 
-        switch (height(n->right) - height(n->left)) {
-            case -2:
-                if (height(n->left->left) < height(n->left->right)) n->left = left_rotate(n->left);
-                n = right_rotate(n);
-            break;
-            case 2:
-                if (height(n->right->left) > height(n->right->right)) n->right = right_rotate(n->right);
-                n = left_rotate(n);
-            break;
-        }
+        // remove the minimum key and add it to the left subtree
+        if (!n->is_leaf()) n->left = insert(n->pop_min(), n->left);
+        update_height(n);
 
         return n;
     }
 
-    static Node* balance_keys(Node *n) {
-        if (n->left == nullptr && n->right != nullptr || n->left != nullptr && n->right == nullptr) {
-            if (n->left != nullptr) {
-                n->push(n->left->max());
-                n->left = remove(n->left->max(), n->left);
-                if (n->left != nullptr) {
-                    n->right = insert(n->pop_max(), n->right);
-                }
-            } else {
-                n->push(n->right->min());
-                n->right = remove(n->right->min(), n->right);
-                if (n->right != nullptr) {
-                    n->left = insert(n->pop_min(), n->left);
-                }
+    static Node* right_key_rotate(Node *n) {
+        Node *l = find_max(n->left);
+        n->push(l->max());
+        n->left = remove(l->max(), n->left);
+
+        if (!n->is_leaf()) n->right = insert(n->pop_max(), n->right);
+        update_height(n);
+
+        return n;
+    }
+
+    static Node* balance(Node *n) {
+        update_height(n);
+
+        if (!n->is_leaf()) {
+            if (n->left == nullptr) {
+                n = left_key_rotate(n);
             }
+            else if (n->right == nullptr) {
+                n = right_key_rotate(n);
+            }
+        }
+
+        switch (height(n->right) - height(n->left)) {
+            case -2:
+                if (height(n->left->left) < height(n->left->right)) n->left = left_node_rotate(n->left);
+                n = right_node_rotate(n);
+            break;
+            case 2:
+                if (height(n->right->left) > height(n->right->right)) n->right = right_node_rotate(n->right);
+                n = left_node_rotate(n);
+            break;
         }
 
         return n;
@@ -189,7 +199,7 @@ private:
             }
         }
 
-        return balance_nodes(n);
+        return balance(n);
     }
 
     static Node* remove(key_t k, Node *n) {
@@ -224,10 +234,10 @@ private:
             }
         }
 
-        return balance_nodes(balance_keys(n));
+        return balance(n);
     }
 
-    void get_statistics(vector<int> &stat, Node *n) const {
+    void get_statistics(vector<int> &stat, const Node *n) const {
         if (n == nullptr) return;
         stat[0]++;
         if (n->is_leaf()) stat[n->size()]++;
@@ -292,58 +302,57 @@ public:
         clear();
     }
 
-    friend ostream& operator<<(ostream &os, const DualAVLTree &davl);
-};
+    friend ostream& operator<<(ostream &os, const DualAVLTree<key_t> &davl) {
+        if (!davl.empty()) {
+            typedef DualAVLTree<key_t>::Node node_t;
+            map<node_t*, int> im;
+            int counter = 0;
 
-ostream& operator<<(ostream &os, const DualAVLTree &davl) {
-    if (!davl.empty()) {
-        map<DualAVLTree::Node*, int> im;
-        int counter = 0;
+            // inorder traversal, map each node to it's x coordinate
+            auto fill_map = [&](auto &self, node_t *n) {
+                if (n == nullptr) return;
+                self(self, n->left);
+                im[n] = counter;
+                counter += int(n->size());
+                self(self, n->right);
+            };
+            fill_map(fill_map, davl.root);
 
-        // inorder traversal, map each node to it's x coordinate
-        auto fill_map = [&](auto &self, DualAVLTree::Node *n) {
-            if (n == nullptr) return;
-            self(self, n->left);
-            im[n] = counter;
-            counter += int(n->size());
-            self(self, n->right);
-        };
-        fill_map(fill_map, davl.root);
+            queue<node_t*> q, next_q;
+            q.push(davl.root);
+            int setw_val = int(to_string(davl.find_max()).length());
+            int x = 0;
 
-        queue<DualAVLTree::Node*> q, next_q;
-        q.push(davl.root);
-        int setw_val = int(to_string(davl.find_max()).length());
-        int x = 0;
+            while (!q.empty()) {
+                node_t *n = q.front();
+                q.pop();
 
-        while (!q.empty()) {
-            DualAVLTree::Node *n = q.front();
-            q.pop();
+                for (; x < im[n]; ++x) {
+                    os << setw(setw_val + 1) << setfill(' ') << ' ';
+                }
 
-            for (; x < im[n]; ++x) {
-                os << setw(setw_val + 1) << setfill(' ') << ' ';
-            }
+                for (int i = 0; i < n->size(); ++i, ++x) {
+                    os << setw(setw_val) << setfill(' ') << n->keys[i] << (i < n->size() - 1 ? ',' : ' ');
+                }
 
-            for (int i = 0; i < n->size(); ++i, ++x) {
-                os << setw(setw_val) << setfill(' ') << n->keys[i] << (i < n->size() - 1 ? ',' : ' ');
-            }
+                if (n->left != nullptr) next_q.push(n->left);
+                if (n->right != nullptr) next_q.push(n->right);
 
-            if (n->left != nullptr) next_q.push(n->left);
-            if (n->right != nullptr) next_q.push(n->right);
-
-            if (q.empty()) {
-                q = next_q;
-                next_q = queue<DualAVLTree::Node*>();
-                if (!q.empty()) os << '\n';
-                x = 0;
+                if (q.empty()) {
+                    q = next_q;
+                    next_q = queue<node_t*>();
+                    if (!q.empty()) os << '\n';
+                    x = 0;
+                }
             }
         }
-    }
 
-    return os;
-}
+        return os;
+    }
+};
 
 int main() {
-    DualAVLTree davl;
+    DualAVLTree<int> davl;
     int n_commands;
     cin >> n_commands;
 
@@ -366,7 +375,7 @@ int main() {
     }
 
     auto stat = davl.get_statistics();
-    for (int i = 0; i < stat.size(); ++i) {
+        for (int i = 0; i < stat.size(); ++i) {
         cout << stat[i] << (i < stat.size() - 1 ? " " : "\n");
     }
 

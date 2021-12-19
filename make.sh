@@ -8,7 +8,7 @@ TEST_PREFIX="$TEST_DIR/$TEST_IN_DIR_PREFIX"
 
 ARG_ZIP="zip"
 ZIP_TARGET="alg06.tgz" # <- to change
-ZIP_FILES=(*".cpp" *".h")
+ZIP_FILES=(*".cpp") # <- to change
 
 ARG_CLEAN="clean"
 CLEAN_FILES=("$ZIP_TARGET")
