@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(hw6_dual-avl)
+project(hw06_dual-avl-tree)
 
 set(CMAKE_CXX_STANDARD 14)
 
